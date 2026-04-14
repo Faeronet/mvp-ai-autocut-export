@@ -1,0 +1,35 @@
+{
+  "relative_path": "gt/gt_02.pdf",
+  "dataset_group": "gt",
+  "file_type": "pdf",
+  "source_id": null,
+  "source_variant": "original",
+  "label_quality": "high_for_image_level",
+  "annotation_scope": "image_level_metadata",
+  "manual_audit_basis": "visual review of unique source sheets and propagation to derived variants",
+  "review_required_for_bbox_or_object_labels": true,
+  "ideal_for": [
+    "dataset curation",
+    "classification",
+    "quality filtering",
+    "split management",
+    "difficulty sampling"
+  ],
+  "not_ideal_for": [
+    "object detection training without manual bbox labels",
+    "pixel-perfect CAD primitive supervision"
+  ],
+  "is_hard_case": false,
+  "has_handwriting": false,
+  "dense_dimensions": false,
+  "is_reference_gt": true,
+  "gt_available": true,
+  "recommended_use": "reference_validation",
+  "primary_class": "mixed_sheet",
+  "content_type": "reference_pdf",
+  "scan_quality": "reference",
+  "multi_sheet_photo": false,
+  "has_table": true,
+  "has_title_block": true,
+  "primary_class_id": 3
+}

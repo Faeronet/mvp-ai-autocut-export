@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: DrawDigit API
+  version: 0.1.0
+paths:
+  /api/v1/health:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: OK
+  /api/v1/health/models:
+    get:
+      summary: Aggregated model health from ML microservices
+      responses:
+        "200":
+          description: OK
+  /api/v1/config/profiles:
+    get:
+      summary: List processing profiles
+      responses:
+        "200":
+          description: OK
+  /api/v1/jobs/upload:
+    post:
+      summary: Upload archive and enqueue job
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                profile:
+                  type: string
+      responses:
+        "200":
+          description: Job created
+  /api/v1/jobs:
+    get:
+      summary: List jobs
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Jobs
+  /api/v1/jobs/{id}:
+    get:
+      summary: Get job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Job
+  /api/v1/jobs/{id}/report:
+    get:
+      summary: Job report JSON
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+  /api/v1/jobs/{id}/download:
+    get:
+      summary: Download results zip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+  /api/v1/jobs/{id}/events:
+    get:
+      summary: SSE progress stream
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+  /api/v1/jobs/{id}/cancel:
+    post:
+      summary: Cancel job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+  /api/v1/jobs/{id}/retry:
+    post:
+      summary: Retry job (new id)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+  /metrics:
+    get:
+      summary: Minimal prometheus-style text metrics

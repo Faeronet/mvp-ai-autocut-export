@@ -1,0 +1,6 @@
+source_images=120
+unique_images=105
+duplicates_removed=15
+train=84
+val=10
+test=11

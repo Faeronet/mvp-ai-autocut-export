@@ -1,0 +1,4 @@
+detail_drawing
+assembly_drawing
+specification_sheet
+mixed_sheet

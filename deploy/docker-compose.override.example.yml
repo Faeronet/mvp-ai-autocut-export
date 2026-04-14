@@ -1,0 +1,12 @@
+# Copy to docker-compose.override.yml to disable GPU passthrough for CPU-only hosts.
+services:
+  layout-service:
+    gpus: []
+  ocr-service:
+    gpus: []
+  vector-service:
+    gpus: []
+  export-service:
+    gpus: []
+  worker:
+    gpus: []

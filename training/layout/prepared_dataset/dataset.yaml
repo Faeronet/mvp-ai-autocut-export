@@ -1,0 +1,12 @@
+path: /home/faeronet/Документы/mcp_mvp/training/layout/prepared_dataset
+train: images/train
+val: images/val
+test: images/test
+nc: 6
+names:
+  0: drawing_area
+  1: title_block
+  2: specification_table
+  3: notes_block
+  4: dimension_cluster
+  5: border_frame

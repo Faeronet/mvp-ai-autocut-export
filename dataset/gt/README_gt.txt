@@ -1,0 +1,1 @@
+GT folder contains 10 PDF surrogates generated from representative sheet images for annotation / pipeline testing.\n

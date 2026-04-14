@@ -1,0 +1,10 @@
+services:
+  api:
+    ports:
+      - "18080:8080"
+  mcp:
+    ports:
+      - "18090:8090"
+  web:
+    ports:
+      - "18081:80"

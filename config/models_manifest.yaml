@@ -1,0 +1,30 @@
+# Mandatory MVP model pack (see docs/model-management.md)
+# PaddleOCR 2.7 resolves weights under $HOME/.paddleocr — set HOME=MODEL_CACHE_DIR in containers.
+version: "1"
+cache_root_env: MODEL_CACHE_DIR
+models:
+  - id: paddleocr_det
+    name: PP-OCRv4 detection (English uses PP-OCRv3 det weights)
+    backend: paddleocr
+    required: true
+    path: "{cache}/.paddleocr/whl/det/en/en_PP-OCRv3_det_infer"
+  - id: paddleocr_rec
+    name: PP-OCRv4 recognition (English)
+    backend: paddleocr
+    required: true
+    path: "{cache}/.paddleocr/whl/rec/en/en_PP-OCRv4_rec_infer"
+  - id: paddleocr_cls
+    name: Angle classifier (shared)
+    backend: paddleocr
+    required: true
+    path: "{cache}/.paddleocr/whl/cls/ch_ppocr_mobile_v2.0_cls_infer"
+  - id: layout_yolov8n
+    name: YOLOv8n layout baseline
+    backend: ultralytics
+    required: true
+    path: "{cache}/layout/yolov8n_layout.pt"
+  - id: table_ppstructure
+    name: Paddle PP-Structure / SLANet table (+ layout weights for PPStructure init)
+    backend: paddleocr_ppstructure
+    required: true
+    path: "{cache}/.paddleocr/whl/table/en_ppstructure_mobile_v2.0_SLANet_infer"

@@ -1,0 +1,8 @@
+task: classification
+nc: 4
+names:
+  0: detail_drawing
+  1: assembly_drawing
+  2: specification_sheet
+  3: mixed_sheet
+notes: image-level labels only; not a bbox detection dataset

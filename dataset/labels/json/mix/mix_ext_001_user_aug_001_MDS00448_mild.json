@@ -1,0 +1,41 @@
+{
+  "relative_path": "mix/mix_ext_001_user_aug_001_MDS00448_mild.jpg",
+  "dataset_group": "mix",
+  "file_type": "jpg",
+  "source_id": "MDS00448",
+  "source_variant": "mild_aug",
+  "label_quality": "high_for_image_level",
+  "annotation_scope": "image_level_metadata",
+  "manual_audit_basis": "visual review of unique source sheets and propagation to derived variants",
+  "review_required_for_bbox_or_object_labels": true,
+  "ideal_for": [
+    "dataset curation",
+    "classification",
+    "quality filtering",
+    "split management",
+    "difficulty sampling"
+  ],
+  "not_ideal_for": [
+    "object detection training without manual bbox labels",
+    "pixel-perfect CAD primitive supervision"
+  ],
+  "primary_class": "mixed_sheet",
+  "content_type": "detail_plus_table",
+  "has_table": true,
+  "has_title_block": true,
+  "has_handwriting": false,
+  "has_stamp": false,
+  "dense_dimensions": false,
+  "multi_sheet_photo": true,
+  "scan_quality": "medium",
+  "notes": "Upper half detail view, lower half table/title area; mixed sheet photo.",
+  "is_hard_case": false,
+  "is_reference_gt": false,
+  "gt_available": false,
+  "recommended_use": "training_or_validation",
+  "image_size": {
+    "width": 1290,
+    "height": 1812
+  },
+  "primary_class_id": 3
+}

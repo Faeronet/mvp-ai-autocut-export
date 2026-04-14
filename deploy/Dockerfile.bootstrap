@@ -1,0 +1,12 @@
+FROM python:3.11-slim-bookworm
+WORKDIR /work
+# No paddle/torch here — bootstrap uses only stdlib (see scripts/bootstrap_models.py).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY scripts/bootstrap_models.py /work/scripts/bootstrap_models.py
+COPY config/models_manifest.yaml /work/config/models_manifest.yaml
+ENV MODEL_CACHE_DIR=/models_cache
+# PaddleOCR stores models under ~/.paddleocr; map HOME so cache volume is authoritative.
+ENV HOME=/models_cache
+CMD ["python3", "/work/scripts/bootstrap_models.py"]

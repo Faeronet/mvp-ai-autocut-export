@@ -1,0 +1,18 @@
+kind,site,title,url,note
+presentation,ppt-online,Деталирование сборочного чертежа. Порядок деталирования,https://ppt-online.org/754046,Assembly drawing + specification + multiple detail sheets.
+presentation,ppt-online,Сборочный чертеж и деталирование сборочной единицы,https://ppt-online.org/265007,GOST/ESKD assembly/detail/specification workflow.
+presentation,ppt-online,"Сборочный чертеж изделия, спецификация",https://en.ppt-online.org/769752,Specification-centric presentation.
+presentation,ppt-online,Сборочный чертеж,https://en.ppt-online.org/595897,Lecture-style ESKD/GOST presentation.
+presentation,ppt-online,Конструкторские документы. Чертеж общего вида и сборочный чертеж,https://en.ppt-online.org/767769,General-view + assembly + specification examples.
+presentation,ppt-online,Чертеж детали и сборочный чертеж,https://ppt-online.org/1421243,Detail and assembly drawing examples.
+manual,studfile,Деталирование сборочного чертежа,https://studfile.net/preview/3936214/,Methodical guide with scanned examples.
+manual,studfile,Сборочный чертеж. Деталирование,https://studfile.net/preview/16725008/,Methodical guide with drawing sheets and detailing examples.
+manual,studfile,Деталирование сборочн. чертежа (Шадрина и др.),https://studfile.net/preview/6211600/,Large PDF manual focused on detailing from assembly drawings.
+manual,studfile,Сборочный черетеж. Оформление спецификации,https://studfile.net/preview/887217/,Specification formatting under ESKD.
+catalog,rusneb,Альбом рабочих чертежей деталей и узлов трактора ТДТ-60,https://rusneb.ru/catalog/000199_000009_005585684/,Soviet-era album of working drawings.
+catalog,rusneb,Альбом рабочих чертежей основных деталей и узлов автомобиля ЗИЛ-157: Ч.1,https://rusneb.ru/catalog/000200_000018_rc_4317951/,Soviet-era album of working drawings.
+catalog,rusneb,Альбом рабочих чертежей основных деталей и узлов автомобиля ЗИЛ-157. Шасси,https://rusneb.ru/catalog/002744_000053_RU___%D0%93%D0%9F%D0%9D%D0%A2%D0%91%2B%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D0%B8___KNB_IBIS___634.93%28084%29___%D0%90%2B56-750029/,Soviet-era album of working drawings.
+cad,alldrawings,Сборочный чертеж калибра-пробки d65H7,https://alldrawings.ru/en/drawings-and-3d-models/item/sborochnyj-chertezh-kalibra-probki-d65h7,Has dxf/dwg/jpg in downloadable archive; candidate for gt/.
+cad,alldrawings,Сборочный чертеж ручки из фенопласта по ГОСТ,https://alldrawings.ru/spisok-kategorij/item/dn20-sborocnyj-certez-rucki-iz-fenoplasta-po-gost,Has CAD archive in Russian GOST style; candidate for gt/.
+cad,alldrawings,Приспособление программное сборочный чертеж,https://alldrawings.ru/spisok-kategorij/item/dn20-prisposoblenie-programmnoe-sborocnyj-certez,Assembly drawing package candidate.
+pdf,studizba,ДМ 1065 — привод ленточного транспортёра,https://studizba.com/files/detali-mashin-dm/coursework/267514-dm-1065-proektirovan-privod-lentochnogo.html,"Package of A1 PDF drawings: general view, assembly, part drawings."

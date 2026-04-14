@@ -1,0 +1,16 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+opencv-python-headless==4.10.0.84
+# OpenCV wheels target NumPy 1.x ABI; NumPy 2.x causes "ABI version" / cv2 import failures.
+numpy>=1.26.4,<2
+Pillow==11.0.0
+# paddlepaddle-gpu + torch are installed in Dockerfile (CUDA 11.8 base image).
+paddleocr==2.7.3
+transformers>=4.46.0,<5.0.0
+huggingface_hub>=0.26.0
+sentencepiece>=0.2.0
+einops>=0.8.0
+shapely==2.0.6
+pyclipper==1.3.0.post5

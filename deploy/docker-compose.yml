@@ -1,0 +1,270 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: drawdigit
+      POSTGRES_PASSWORD: drawdigit
+      POSTGRES_DB: drawdigit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drawdigit -d drawdigit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Downloads PaddleOCR + YOLOv8n + PP-Structure weights into models_cache (first run).
+  bootstrap-models:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.bootstrap
+    # Avoid "Temporary failure in name resolution" when Docker's DNS forwarder is slow or broken.
+    dns:
+      - ${BOOTSTRAP_DNS_1:-1.1.1.1}
+      - ${BOOTSTRAP_DNS_2:-8.8.8.8}
+    environment:
+      MODEL_CACHE_DIR: /models_cache
+      HOME: /models_cache
+      MODEL_AUTO_DOWNLOAD: ${MODEL_AUTO_DOWNLOAD:-true}
+      MODEL_STARTUP_STRICT: ${MODEL_STARTUP_STRICT:-true}
+      OCR_USE_GPU: "false"
+      TABLE_USE_GPU: "false"
+    volumes:
+      - models_cache:/models_cache
+    restart: "no"
+    shm_size: "2gb"
+
+  layout-service:
+    build:
+      context: ..
+      dockerfile: services/layout-service/Dockerfile
+    environment:
+      &ml-env
+      PROFILE_GPU: ${PROFILE_GPU:-PROFILE_GPU_12GB}
+      TILE_SIZE: ${TILE_SIZE:-512}
+      MAX_IMAGE_SIDE: ${MAX_IMAGE_SIDE:-2048}
+      FP16_ENABLED: ${FP16_ENABLED:-true}
+      LAYOUT_BATCH_SIZE: ${LAYOUT_BATCH_SIZE:-1}
+      OCR_BATCH_SIZE: ${OCR_BATCH_SIZE:-1}
+      LAYOUT_USE_GPU: ${LAYOUT_USE_GPU:-true}
+      OCR_USE_GPU: ${OCR_USE_GPU:-true}
+      TORCH_CUDA_ALLOC_CONF: ${TORCH_CUDA_ALLOC_CONF:-max_split_size_mb:128}
+      # Pin a single GPU (set e.g. 0,1 or all); requires NVIDIA Container Toolkit on the host.
+      CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}
+      # If true, layout/ocr exit at startup when CUDA is not usable (no silent CPU inference).
+      ML_REQUIRE_GPU: ${ML_REQUIRE_GPU:-true}
+      MODEL_CACHE_DIR: /models_cache
+      HOME: /models_cache
+      MODEL_AUTO_DOWNLOAD: ${MODEL_AUTO_DOWNLOAD:-true}
+      MODEL_STARTUP_STRICT: ${MODEL_STARTUP_STRICT:-true}
+      OCR_BACKEND: paddleocr
+      OCR_LANG: ${OCR_LANG:-ru}
+      TABLE_BACKEND: paddle_table
+      LAYOUT_BACKEND: yolov8n
+      LAYOUT_MODEL_WEIGHTS: ${LAYOUT_MODEL_WEIGHTS:-/models_cache/layout/yolov8n_layout.pt}
+      SHEET_CLASSIFIER_BACKEND: ${SHEET_CLASSIFIER_BACKEND:-rules}
+      ENABLE_MODEL_SHEET_CLASSIFIER: ${ENABLE_MODEL_SHEET_CLASSIFIER:-false}
+      SYMBOL_DETECTION_BACKEND: ${SYMBOL_DETECTION_BACKEND:-heuristic}
+      ENABLE_SYMBOL_DETECTION: ${ENABLE_SYMBOL_DETECTION:-true}
+      REVIEW_BACKEND: ${REVIEW_BACKEND:-rules}
+      ENABLE_LOW_CONFIDENCE_REVIEW: ${ENABLE_LOW_CONFIDENCE_REVIEW:-true}
+      ENABLE_LLM_REVIEW_FALLBACK: ${ENABLE_LLM_REVIEW_FALLBACK:-false}
+    gpus: all
+    shm_size: "2gb"
+    volumes:
+      - app_data:/data
+      - models_cache:/models_cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    depends_on:
+      bootstrap-models:
+        condition: service_completed_successfully
+
+  ocr-service:
+    build:
+      context: ..
+      dockerfile: services/ocr-service/Dockerfile
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      <<: *ml-env
+      VLM_BACKEND: ${VLM_BACKEND:-hf_transformers}
+      VLM_ENABLED: ${VLM_ENABLED:-true}
+      VLM_MODEL_ID: ${VLM_MODEL_ID:-PaddlePaddle/PaddleOCR-VL}
+      VLM_DEVICE: ${VLM_DEVICE:-cuda}
+      VLM_USE_FP16: ${VLM_USE_FP16:-true}
+      VLM_MAX_BATCH: ${VLM_MAX_BATCH:-1}
+      VLM_MAX_NEW_TOKENS: ${VLM_MAX_NEW_TOKENS:-512}
+      HF_HUB_ENABLE_HF_TRANSFER: ${HF_HUB_ENABLE_HF_TRANSFER:-0}
+      HF_HUB_DOWNLOAD_TIMEOUT: ${HF_HUB_DOWNLOAD_TIMEOUT:-120}
+      HF_HUB_ETAG_TIMEOUT: ${HF_HUB_ETAG_TIMEOUT:-120}
+    gpus: all
+    shm_size: "2gb"
+    volumes:
+      - app_data:/data
+      - models_cache:/models_cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    depends_on:
+      bootstrap-models:
+        condition: service_completed_successfully
+
+  vector-service:
+    build:
+      context: ..
+      dockerfile: services/vector-service/Dockerfile
+    environment:
+      <<: *ml-env
+    volumes:
+      - app_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  export-service:
+    build:
+      context: ..
+      dockerfile: services/export-service/Dockerfile
+    environment:
+      <<: *ml-env
+    volumes:
+      - app_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    environment:
+      HTTP_ADDR: ":8080"
+      POSTGRES_DSN: postgres://drawdigit:drawdigit@postgres:5432/drawdigit?sslmode=disable
+      REDIS_ADDR: redis:6379
+      DATA_DIR: /data
+      LAYOUT_SERVICE_URL: http://layout-service:8001
+      OCR_SERVICE_URL: http://ocr-service:8002
+      VECTOR_SERVICE_URL: http://vector-service:8003
+      EXPORT_SERVICE_URL: http://export-service:8004
+      MOCK_PIPELINE: ${MOCK_PIPELINE:-false}
+      MODEL_CACHE_DIR: /models_cache
+      MODEL_AUTO_DOWNLOAD: ${MODEL_AUTO_DOWNLOAD:-true}
+      MODEL_STARTUP_STRICT: ${MODEL_STARTUP_STRICT:-true}
+      # Use * for permissive LAN/public access; set explicit origins in production.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_data:/data
+      - logs:/logs
+    ports:
+      - "0.0.0.0:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.worker
+    environment:
+      POSTGRES_DSN: postgres://drawdigit:drawdigit@postgres:5432/drawdigit?sslmode=disable
+      REDIS_ADDR: redis:6379
+      DATA_DIR: /data
+      LAYOUT_SERVICE_URL: http://layout-service:8001
+      OCR_SERVICE_URL: http://ocr-service:8002
+      VECTOR_SERVICE_URL: http://vector-service:8003
+      EXPORT_SERVICE_URL: http://export-service:8004
+      MOCK_PIPELINE: ${MOCK_PIPELINE:-false}
+      GPU_SEMAPHORE_KEY: gpu:global_lock
+      GPU_LOCK_TTL: 30m
+      CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      layout-service:
+        condition: service_started
+      ocr-service:
+        condition: service_started
+      vector-service:
+        condition: service_started
+      export-service:
+        condition: service_started
+    volumes:
+      - app_data:/data
+      - logs:/logs
+
+  mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mcp
+    environment:
+      POSTGRES_DSN: postgres://drawdigit:drawdigit@postgres:5432/drawdigit?sslmode=disable
+      REDIS_ADDR: redis:6379
+      DATA_DIR: /data
+      MCP_HTTP_ADDR: ":8090"
+      # * allows MCP clients that send Origin from any host (tighten behind a reverse proxy in production).
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-*,localhost,127.0.0.1}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-change-me}
+      MODEL_CACHE_DIR: /models_cache
+      LAYOUT_SERVICE_URL: http://layout-service:8001
+      OCR_SERVICE_URL: http://ocr-service:8002
+      VECTOR_SERVICE_URL: http://vector-service:8003
+      EXPORT_SERVICE_URL: http://export-service:8004
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_data:/data
+    ports:
+      - "0.0.0.0:8090:8090"
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    depends_on:
+      - api
+    ports:
+      - "0.0.0.0:80:80"
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_data:
+  models_cache:
+  logs:

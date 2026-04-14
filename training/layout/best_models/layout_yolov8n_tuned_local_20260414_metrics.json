@@ -1,0 +1,16 @@
+{
+  "run_name": "layout_yolov8n_tuned_local_20260414",
+  "epochs_completed": 140,
+  "best_epoch": 40,
+  "best_metrics": {
+    "precision_B": 0.8415,
+    "recall_B": 0.98074,
+    "mAP50_B": 0.995,
+    "mAP50_95_B": 0.8955
+  },
+  "weights": {
+    "run_best": "/home/faeronet/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b/mcp_mvp/training/layout/runs/layout_yolov8n_tuned_local_20260414/weights/best.pt",
+    "deployment_copy": "/home/faeronet/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b/mcp_mvp/data/models_cache/layout/yolov8n_layout.pt",
+    "backup_copy": "/home/faeronet/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b/mcp_mvp/training/layout/best_models/yolov8n_layout_20260414.pt"
+  }
+}
