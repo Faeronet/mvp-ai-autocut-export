@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 from app.preprocessing.branches import make_geometry_branch, make_ocr_branch
+from app.preprocessing.clean_drawing_hybrid_v2 import clean_drawing as clean_hybrid
 from app.preprocessing.frame_detect import detect_page_frame
 from app.preprocessing.illumination import normalize_background
 
@@ -90,8 +91,17 @@ def normalize_document(image_path: str, output_dir: str, max_side: int) -> Norma
     normalized_path = debug_dir / "normalized.png"
     cv2.imwrite(str(normalized_path), normalized)
 
+    warnings: list[str] = []
+    try:
+        cleaned_hybrid = clean_hybrid(gray)
+    except Exception:
+        cleaned_hybrid = normalized
+        warnings.append("hybrid_cleaner_failed_fallback")
+    cleaned_hybrid_path = debug_dir / "cleaned_hybrid_v2.png"
+    cv2.imwrite(str(cleaned_hybrid_path), cleaned_hybrid)
+
     ocr_branch = make_ocr_branch(normalized)
-    geom_branch = make_geometry_branch(normalized)
+    geom_branch = make_geometry_branch(cleaned_hybrid)
     soft_path = out / "soft.png"
     bin_path = out / "binary.png"
     pre_path = out / "preprocessed.png"
@@ -104,7 +114,6 @@ def normalize_document(image_path: str, output_dir: str, max_side: int) -> Norma
     cv2.imwrite(str(ocr_path), ocr_branch)
     cv2.imwrite(str(geom_path), geom_branch)
 
-    warnings: list[str] = []
     if frame.confidence < 0.4:
         warnings.append("weak_frame_detection")
     if deskew_conf < 0.35:
@@ -120,6 +129,7 @@ def normalize_document(image_path: str, output_dir: str, max_side: int) -> Norma
             "cropped": str(cropped_path),
             "deskewed": str(deskewed_path),
             "normalized": str(normalized_path),
+            "cleaned_hybrid_v2": str(cleaned_hybrid_path),
             "ocr_branch": str(ocr_path),
             "geom_branch": str(geom_path),
         },

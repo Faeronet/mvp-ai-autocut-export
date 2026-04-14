@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Optional
 import cv2
 
 
-class PaddleOCRVLParser:
+class Qwen25VLParser:
     """
-    PaddleOCR-VL semantic document parser.
+    Qwen2.5-VL-3B semantic document parser.
     It is intentionally used as a semantic/document layer (regions, orientation, review hints),
     not as direct CAD geometry generator.
     """
@@ -22,6 +22,8 @@ class PaddleOCRVLParser:
         max_batch: int,
         model_id: str,
         max_new_tokens: int,
+        quantization: str,
+        use_flash_attention: bool,
     ) -> None:
         self.enabled = enabled
         self.backend = backend
@@ -30,38 +32,24 @@ class PaddleOCRVLParser:
         self.max_batch = max(1, int(max_batch))
         self.model_id = model_id
         self.max_new_tokens = max(64, int(max_new_tokens))
+        self.quantization = str(quantization).lower()
+        self.use_flash_attention = use_flash_attention
         self._engine: Any = None
         self._processor: Any = None
         self._hf_model: Any = None
         self._hf_backend = False
         self._last_error: Optional[str] = None
-        self._model_version = "paddleocr-vl-0.9b"
+        self._model_version = "qwen2.5-vl-3b"
         self._init_engine()
 
     def _init_engine(self) -> None:
         if not self.enabled:
             self._last_error = "vlm_disabled"
             return
-        if self.backend not in ("paddleocr_vl", "hf_transformers"):
+        if self.backend not in ("qwen2_5_vl_3b", "hf_transformers"):
             self._last_error = f"unsupported_vlm_backend:{self.backend}"
             return
-        if self.backend == "hf_transformers":
-            self._init_hf_engine()
-            return
-        try:
-            # Import is intentionally dynamic because PaddleOCR-VL deployment APIs vary.
-            from paddleocr import PaddleOCRVL  # type: ignore[attr-defined]
-
-            self._engine = PaddleOCRVL(
-                device=self.device,
-                use_fp16=self.use_fp16,
-                max_batch_size=self.max_batch,
-            )
-        except Exception as exc:  # noqa: BLE001
-            self._last_error = str(exc)
-            self._engine = None
-            # Try HuggingFace path if PaddleOCR package doesn't expose PaddleOCRVL.
-            self._init_hf_engine()
+        self._init_hf_engine()
 
     def _init_hf_engine(self) -> None:
         try:
@@ -70,22 +58,37 @@ class PaddleOCRVLParser:
 
             dtype = torch.float16 if self.use_fp16 else torch.float32
             self._processor = AutoProcessor.from_pretrained(self.model_id, trust_remote_code=True)
+            quant_cfg = None
+            if self.device.startswith("cuda") and self.quantization in ("4bit", "8bit"):
+                try:
+                    from transformers import BitsAndBytesConfig
+
+                    quant_cfg = BitsAndBytesConfig(
+                        load_in_4bit=self.quantization == "4bit",
+                        load_in_8bit=self.quantization == "8bit",
+                    )
+                except Exception:
+                    quant_cfg = None
             try:
                 self._hf_model = AutoModelForImageTextToText.from_pretrained(
                     self.model_id,
                     trust_remote_code=True,
                     torch_dtype=dtype,
+                    quantization_config=quant_cfg,
+                    attn_implementation="eager" if not self.use_flash_attention else "flash_attention_2",
                 )
             except Exception:
-                # Some PaddleOCR-VL revisions expose custom model classes not wired into
-                # AutoModelForImageTextToText mappings; trust_remote_code + AutoModel works.
                 self._hf_model = AutoModel.from_pretrained(
                     self.model_id,
                     trust_remote_code=True,
                     torch_dtype=dtype,
+                    quantization_config=quant_cfg,
                 )
             target_device = "cuda" if self.device.startswith("cuda") else "cpu"
-            self._hf_model = self._hf_model.to(target_device).eval()
+            # Quantized model is device-mapped by transformers/bitsandbytes.
+            if quant_cfg is None:
+                self._hf_model = self._hf_model.to(target_device)
+            self._hf_model = self._hf_model.eval()
             self._hf_backend = True
             self._model_version = f"hf:{self.model_id}"
             self._last_error = None
@@ -128,12 +131,12 @@ class PaddleOCRVLParser:
                 "review_hints": [
                     {
                         "kind": "vlm_unavailable",
-                        "reason": f"paddleocr_vl_unavailable:{self._last_error or 'unknown'}",
+                        "reason": f"qwen2_5_vl_unavailable:{self._last_error or 'unknown'}",
                         "bbox_xyxy": [0.0, 0.0, float(w), float(h)],
                         "confidence": 0.0,
                     }
                 ],
-                "warnings": [f"paddleocr_vl_unavailable:{self._last_error or 'unknown'}"],
+                "warnings": [f"qwen2_5_vl_unavailable:{self._last_error or 'unknown'}"],
                 "model_version": self.model_version,
                 "confidence": 0.0,
             }
@@ -156,7 +159,7 @@ class PaddleOCRVLParser:
                         "confidence": 0.0,
                     }
                 ],
-                "warnings": [f"paddleocr_vl_infer_failed:{exc}"],
+                "warnings": [f"qwen2_5_vl_infer_failed:{exc}"],
                 "model_version": self.model_version,
                 "confidence": 0.0,
             }
@@ -182,11 +185,24 @@ class PaddleOCRVLParser:
             return_tensors="pt",
         )
         device = "cuda" if self.device.startswith("cuda") and torch.cuda.is_available() else "cpu"
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        if hasattr(inputs, "items"):
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+        elif hasattr(inputs, "to"):
+            inputs = inputs.to(device)
+        else:
+            raise RuntimeError("unexpected_processor_output")
         with torch.no_grad():
-            outputs = self._hf_model.generate(**inputs, max_new_tokens=self.max_new_tokens)
+            if hasattr(inputs, "items"):
+                outputs = self._hf_model.generate(**inputs, max_new_tokens=self.max_new_tokens)
+                input_ids = inputs.get("input_ids")
+            else:
+                outputs = self._hf_model.generate(inputs, max_new_tokens=self.max_new_tokens)
+                input_ids = None
         if hasattr(self._processor, "decode"):
-            text = self._processor.decode(outputs[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
+            if input_ids is not None:
+                text = self._processor.decode(outputs[0][input_ids.shape[-1] :], skip_special_tokens=True)
+            else:
+                text = self._processor.decode(outputs[0], skip_special_tokens=True)
         else:
             text = str(outputs)
         text = text.strip()
@@ -256,3 +272,7 @@ def _normalize_vlm_payload(raw: Any, width: int, height: int, model_version: str
         "model_version": model_version,
         "confidence": float(payload.get("confidence", 0.0)),
     }
+
+
+# Backward compatibility alias for existing imports.
+PaddleOCRVLParser = Qwen25VLParser

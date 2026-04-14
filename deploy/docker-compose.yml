@@ -103,10 +103,12 @@ services:
       - 8.8.4.4
     environment:
       <<: *ml-env
-      VLM_BACKEND: ${VLM_BACKEND:-hf_transformers}
+      VLM_BACKEND: ${VLM_BACKEND:-qwen2_5_vl_3b}
       VLM_ENABLED: ${VLM_ENABLED:-true}
-      VLM_MODEL_ID: ${VLM_MODEL_ID:-PaddlePaddle/PaddleOCR-VL}
+      VLM_MODEL_ID: ${VLM_MODEL_ID:-Qwen/Qwen2.5-VL-3B-Instruct}
       VLM_DEVICE: ${VLM_DEVICE:-cuda}
+      VLM_QUANTIZATION: ${VLM_QUANTIZATION:-4bit}
+      VLM_USE_FLASH_ATTENTION: ${VLM_USE_FLASH_ATTENTION:-false}
       VLM_USE_FP16: ${VLM_USE_FP16:-true}
       VLM_MAX_BATCH: ${VLM_MAX_BATCH:-1}
       VLM_MAX_NEW_TOKENS: ${VLM_MAX_NEW_TOKENS:-512}

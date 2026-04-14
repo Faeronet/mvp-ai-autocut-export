@@ -8,7 +8,7 @@ from app.core.config import Settings
 from app.ml_gpu_check import require_paddle_cuda_if_configured
 from app.inference.paddle_ocr_runner import PaddleOCRRunner
 from app.inference.table_structure_engine import TableStructureEngine
-from app.inference.vl_parser import PaddleOCRVLParser
+from app.inference.vl_parser import Qwen25VLParser
 from app.model_registry.state import REGISTRY, ModelStatus
 from app.services.ocr_service import OCRService
 from app.services.page_understanding_service import PageUnderstandingService
@@ -89,7 +89,7 @@ def load_services(settings: Settings) -> tuple[OCRService, TableStructureService
     if runner is None:
         raise RuntimeError("OCR runner not initialized")
 
-    vl_parser = PaddleOCRVLParser(
+    vl_parser = Qwen25VLParser(
         enabled=settings.vlm_enabled,
         backend=settings.vlm_backend,
         device=settings.vlm_device,
@@ -97,11 +97,13 @@ def load_services(settings: Settings) -> tuple[OCRService, TableStructureService
         max_batch=settings.vlm_max_batch,
         model_id=settings.vlm_model_id,
         max_new_tokens=settings.vlm_max_new_tokens,
+        quantization=settings.vlm_quantization,
+        use_flash_attention=settings.vlm_use_flash_attention,
     )
     if vl_parser.is_ready:
         REGISTRY.set(
             ModelStatus(
-                model_name="paddleocr_vl_0_9b",
+                model_name="qwen2_5_vl_3b",
                 installed=True,
                 loaded=True,
                 version=vl_parser.model_version,
@@ -112,7 +114,7 @@ def load_services(settings: Settings) -> tuple[OCRService, TableStructureService
     else:
         REGISTRY.set(
             ModelStatus(
-                model_name="paddleocr_vl_0_9b",
+                model_name="qwen2_5_vl_3b",
                 installed=False,
                 loaded=False,
                 version=vl_parser.model_version,
